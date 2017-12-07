@@ -29,7 +29,7 @@ class Botnet:
         except requests.exceptions.ConnectionError:
             self.online = False
 
-    def getServer(self):
+    def setServer(self):
         try:
             r = requests.get("http://" + self.url, headers = headers)
             if r.headers['server'] != None:
@@ -42,10 +42,17 @@ class Botnet:
         u = self.url.find('/')
         p = subprocess.Popen(["geoiplookup", self.url[:u]], stdout=subprocess.PIPE)
         output, err = p.communicate()
-        self.country = output.decode(encoding='UTF-8')[23:]
+        self.country = output.decode(encoding='UTF-8')[23:25]
 
+    def setInfo(self):
+        self.setOnlineStatus()
+        self.setCountry()
+        self.setServer()
 
-r = requests.get('http://cybercrime-tracker.net/index.php?s=0&m=10').text
+    def getInfo(self):
+        return self.url + ", " + str(self.online) + ", " + str(self.country) + ", " + str(self.server)
+
+r = requests.get('http://cybercrime-tracker.net/index.php?s=0&m=100').text
 
 soup = BeautifulSoup(r, 'html.parser')
 
@@ -62,8 +69,5 @@ for server in botnets_list:
     botnets.append(Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3]))
 
 for bot in botnets:
-    print(bot.family, end=" ")
-    bot.setOnlineStatus()
-    bot.setCountry()
-    bot.getServer()
-    print(bot.server)
+    bot.setInfo()
+    print(bot.getInfo())
