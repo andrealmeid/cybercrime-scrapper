@@ -74,11 +74,36 @@ class Botnet:
         return self.url + "; " + str(self.online) + "; " + str(self.country) + "; " + str(self.webServer) + "; " + str(self.ports)
 
 def main(argv):
-    if len(argv) == 2 and (argv[1] == "--help" or argv[1] == "-h"):
-        print("help")
+    if len(argv) == 1:
+        list_start = "0"
+        list_size = "30"
+
+    elif len(argv) == 2 and (argv[1] == "--help" or argv[1] == "-h"):
+        print("A scrapper to get information about botnets found on http://cybercrime-tracker.net/\n")
+        print("List start determines the first botnet to start the list")
+        print("List size determines how many botnets you want to scan")
+        print("\nUsage: ./scrapper [list start] [list size] [-h|--help]")
         exit(0)
 
-    r = requests.get('http://cybercrime-tracker.net/index.php?s=0&m=2').text
+    elif len(argv) == 3:
+        try:
+            list_start = int(argv[1])
+            list_size = int(argv[2])
+            if list_start >= 0 and list_size > 0:
+                list_start = str(list_start)
+                list_size = str(list_size)
+            else:
+                raise Exception
+
+        except:
+            print("Usage: ./scrapper [list start] [list size] [-h|--help]")
+            exit(0)
+
+    else:
+        print("Usage: ./scrapper [list start] [list size] [-h|--help]")
+        exit(0)
+
+    r = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
 
     soup = BeautifulSoup(r, 'html.parser')
 
