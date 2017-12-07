@@ -56,7 +56,7 @@ class Botnet:
         nm = nmap.PortScanner()
         u = self.url.find('/')
         host = self.url[:u]
-        nm.scan(host, '1-1000')
+        nm.scan(host, arguments='-Pn')
         self.ports = list(nm[nm.all_hosts()[0]]['tcp'].keys())
 
     # Returns True if the C&C server is found online and False otherwise.
