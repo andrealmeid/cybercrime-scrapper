@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import nmap
 import requests
 import subprocess
 
@@ -44,6 +45,14 @@ class Botnet:
         output, err = p.communicate()
         self.country = output.decode(encoding='UTF-8')[23:]
 
+    def getOpenPorts(self):
+        nm = nmap.PortScanner()
+        u = self.url.find('/')
+        host = self.url[:u]
+        nm.scan(host, '1-1000')
+        self.ports = nm[nm.all_hosts()[0]]['tcp'].keys()
+
+
 
 r = requests.get('http://cybercrime-tracker.net/index.php?s=0&m=10').text
 
@@ -66,4 +75,5 @@ for bot in botnets:
     bot.setOnlineStatus()
     bot.setCountry()
     bot.getServer()
-    print(bot.server)
+    bot.getOpenPorts()
+    print(bot.ports)
