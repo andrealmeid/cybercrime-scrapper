@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import nmap
 import requests
 import subprocess
 
@@ -44,10 +45,18 @@ class Botnet:
         output, err = p.communicate()
         self.country = output.decode(encoding='UTF-8')[23:25]
 
+    def getOpenPorts(self):
+        nm = nmap.PortScanner()
+        u = self.url.find('/')
+        host = self.url[:u]
+        nm.scan(host, '1-1000')
+        self.ports = nm[nm.all_hosts()[0]]['tcp'].keys()
+
     def setInfo(self):
         self.setOnlineStatus()
         self.setCountry()
         self.setServer()
+        self.getOpenPorts()
 
     def getInfo(self):
         return self.url + ", " + str(self.online) + ", " + str(self.country) + ", " + str(self.server)
@@ -70,4 +79,4 @@ for server in botnets_list:
 
 for bot in botnets:
     bot.setInfo()
-    print(bot.getInfo())
+    bot.getInfo()
