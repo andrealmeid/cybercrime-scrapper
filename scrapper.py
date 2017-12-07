@@ -1,7 +1,10 @@
+#!/bin/python3
+
 from bs4 import BeautifulSoup
 import nmap
 import requests
 import subprocess
+import sys
 
 headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
 "Accept":"text/html,application/xhtlm+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"}
@@ -16,10 +19,11 @@ class Botnet:
         self.tor = False
         self.ports = []
         self.country = None
-        self.server = None
+        self.webServer = None
         self.so = None
 
-    def setOnlineStatus(self):
+    # Obtain server status
+    def updateOnlineStatus(self):
         try:
             r = requests.get("http://" + self.url, headers = headers)
             if r.status_code == 200:
@@ -30,39 +34,51 @@ class Botnet:
         except requests.exceptions.ConnectionError:
             self.online = False
 
-    def setServer(self):
+
+    # Obtains web server
+    def updateWebServer(self):
         try:
             r = requests.get("http://" + self.url, headers = headers)
             if r.headers['server'] != None:
-                self.server = r.headers['server']
+                self.webServer = r.headers['server']
 
         except:
             return
 
-    def setCountry(self):
-        path = self.url.find('/')
-        p = subprocess.Popen(["geoiplookup", self.url[:path]], stdout=subprocess.PIPE)
+    # Obtains country
+    def checkCountry(self):
+        u = self.url.find('/')
+        p = subprocess.Popen(["geoiplookup", self.url[:u]], stdout=subprocess.PIPE)
         output, err = p.communicate()
         self.country = output.decode(encoding='UTF-8')[23:25]
 
-    def getOpenPorts(self):
+    def checkOpenPorts(self):
         nm = nmap.PortScanner()
         u = self.url.find('/')
         host = self.url[:u]
         nm.scan(host, '1-1000')
-        self.ports = nm[nm.all_hosts()[0]]['tcp'].keys()
+        self.ports = list(nm[nm.all_hosts()[0]]['tcp'].keys())
 
-    def setInfo(self):
-        self.setOnlineStatus()
-        self.setCountry()
-        self.setServer()
-        self.getOpenPorts()
+    # Returns True if the C&C server is found online and False otherwise.
+    def updateInfo(self):
+        self.updateOnlineStatus()
+        if self.online:
+            self.checkCountry()
+            self.updateWebServer()
+            self.checkOpenPorts()
+            return True
+        else:
+            return False
 
-    def getInfo(self):
-        return self.url + ", " + str(self.online) + ", " + str(self.country) + ", " + str(self.server)
+    def getCsvData(self):
+        return self.url + "; " + str(self.online) + "; " + str(self.country) + "; " + str(self.webServer) + "; " + str(self.ports)
 
 def main(argv):
-    r = requests.get('http://cybercrime-tracker.net/index.php?s=0&m=100').text
+    if len(argv) == 2 and (argv[1] == "--help" or argv[1] == "-h"):
+        print("help")
+        exit(0)
+
+    r = requests.get('http://cybercrime-tracker.net/index.php?s=0&m=2').text
 
     soup = BeautifulSoup(r, 'html.parser')
 
@@ -78,9 +94,9 @@ def main(argv):
 
         botnets.append(Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3]))
 
-    for bot in botnets:
-        bot.setInfo()
-        bot.getInfo()
+        for bot in botnets:
+            if bot.updateInfo():
+                print (bot.getCsvData())
 
 if __name__ == "__main__":
     main(sys.argv)
