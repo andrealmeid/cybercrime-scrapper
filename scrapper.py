@@ -1,6 +1,10 @@
 from bs4 import BeautifulSoup
 import urllib.request as url
+import requests
 import subprocess
+
+headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
+"Accept":"text/html,application/xhtlm+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"}
 
 class Botnet:
     def __init__(self, date, url, ip, family):
@@ -17,15 +21,23 @@ class Botnet:
 
     def setOnlineStatus(self):
         try:
-            url.urlopen("http://" + self.url)
-            print(url.urlopen("http://" + self.url).info()['Server'])
-            self.online = True
-        except Exception as e:
-            print(e)
+            r = requests.get("http://" + self.url, headers = headers)
+            if r.status_code == 200:
+                self.online = True
+            else:
+                self.online = False
+
+        except requests.exceptions.ConnectionError:
             self.online = False
 
-    def getOnlineStatus(self):
-        return self.online
+    def setServer(self):
+        try:
+            r = requests.get("http://" + self.url, headers = headers)
+            if r.headers['server'] != None:
+                self.server = r.headers['server']
+
+        except:
+            return
 
     def setCountry(self):
         u = self.url.find('/')
@@ -56,9 +68,6 @@ for server in botnets_list:
 for bot in botnets:
     print(bot.family, end=" ")
     bot.setOnlineStatus()
-    print(bot.getOnlineStatus())
-#     # bot.setCountry()
-#
-    #u = bot.url.find('/')
-    #print(url.urlopen("http://" + bot.url).info()['Server'])
-#
+    bot.setCountry()
+    bot.getServer()
+    print(bot.server)
