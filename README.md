@@ -10,6 +10,6 @@ This software scraps Command and Control URLs from [CyberCrime Tracker](http://c
 ### Installing
 This is a Python 3 software, and it dependencies are:
 - requests, for getting HTML and HTTP information;
-- python-nmap, to scan for open ports;
+- nmap-python, to scan for open ports;
 - BeautifulSoup 4, for scrapping the HTML;
 - subprocess, to run Unix commands.
