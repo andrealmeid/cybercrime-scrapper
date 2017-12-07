@@ -103,11 +103,11 @@ def main(argv):
         print("Usage: ./scrapper [list start] [list size] [-h|--help]")
         exit(0)
 
-    r = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
+    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
 
-    soup = BeautifulSoup(r, 'html.parser')
+    cybercrime_html = BeautifulSoup(cybercrime_html, 'html.parser')
 
-    botnets_list = soup.find('tbody').find_all('tr')
+    botnets_list = cybercrime_html.find('tbody').find_all('tr')
 
     botnets = []
 
@@ -119,9 +119,9 @@ def main(argv):
 
         botnets.append(Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3]))
 
-        for bot in botnets:
-            if bot.updateInfo():
-                print (bot.getCsvData())
+    for bot in botnets:
+        if bot.updateInfo():
+            print (bot.getCsvData())
 
 if __name__ == "__main__":
     main(sys.argv)
