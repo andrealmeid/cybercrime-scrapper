@@ -11,18 +11,19 @@ conn = sqlite3.connect(database_name)
 cursor = conn.cursor()
 
 cursor.execute("""
-CREATE TABLE Botnet (
-url text,
-include_date date,
-ip text,
-family text,
-online boolean,
-tor boolean,
-ports text,
-country text,
-webServer text,
-os text,
-UNIQUE(url))
+    CREATE TABLE Botnet (
+        url text,
+        include_date date,
+        ip text,
+        family text,
+        online boolean,
+        tor boolean,
+        ports text,
+        country text,
+        webServer text,
+        os text,
+        UNIQUE(url)
+    )
 """)
 
 

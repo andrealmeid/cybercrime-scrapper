@@ -17,7 +17,7 @@ class Botnet:
         self.family = family
         self.online = False
         self.tor = False
-        self.ports = []
+        self.ports = None
         self.country = None
         self.webServer = None
         self.os = None
@@ -47,7 +47,7 @@ class Botnet:
 
     # Obtains country
     def checkCountry(self):
-        p = subprocess.Popen(["geoiplookup", getDomain(self.url), stdout=subprocess.PIPE)
+        p = subprocess.Popen(["geoiplookup", getDomain(self.url)], stdout=subprocess.PIPE)
         output, err = p.communicate()
         self.country = output.decode(encoding='UTF-8')[23:25]
 
@@ -56,7 +56,33 @@ class Botnet:
         u = self.url.find('/')
         host = self.url[:u]
         nm.scan(host, arguments='-Pn')
-        self.ports = list(nm[nm.all_hosts()[0]]['tcp'].keys())
+        self.ports = str(list(nm[nm.all_hosts()[0]]['tcp'].keys()))
+
+    def checkOS(self):
+        if not self.webServer:
+            return
+
+        webServer = self.webServer.lower()
+
+        if webServer.find("ubuntu") != -1:
+            self.os = "Ubuntu"
+            return
+
+        if webServer.find("centos") != -1:
+            self.os = "CentOS"
+            return
+
+        if webServer.find("debian") != -1:
+            self.os = "Debian"
+            return
+
+        if webServer.find("unix") != -1:
+            self.os = "Unix"
+            return
+
+        if webServer.find("win") != -1 or webServer.find("windows")  != -1 or webServer.find("microsoft")  != -1 or webServer.find("iis") != -1:
+            self.os = "Windows"
+            return
 
     # Returns True if the C&C server is found online and False otherwise.
     def updateInfo(self):
@@ -65,13 +91,15 @@ class Botnet:
             self.checkCountry()
             self.updateWebServer()
             self.checkOpenPorts()
+            self.checkOS()
             return True
         else:
             return False
 
     def getCsvData(self):
-        return self.url + "; " + str(self.online) + "; " + str(self.country) + "; " + str(self.webServer) + "; " + str(self.ports)
-
+        return self.date + "; " + self.url + "; " + self.ip + "; " + self.family + "; "
+            + str(self.online) + "; " + str(self.tor) + "; " + str(self.country)
+            + str(self.tor) + "; "  + str(self.webServer) + "; "  + str(self.os)
 def handleArguments(argv):
     if len(argv) == 1:
         list_start = "0"
@@ -120,6 +148,7 @@ def insertDatabase(connection, arg_list):
         connection.commit()
 
     except Exception as e:
+        print("Database insertion error:")
         print(e)
 
 
@@ -147,11 +176,15 @@ def main(argv):
         for d in data:
             bot_info.append(d.text)
 
+        if bot_info[2] == "":
+            bot_info[2] = getDomain(bot_info[1])
+
         botnets.append(Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3]))
 
 
     for bot in botnets:
         if bot.updateInfo():
+            print(bot.getCsvData())
             insertDatabase(connection, (bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os))
 
 if __name__ == "__main__":
