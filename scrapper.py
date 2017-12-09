@@ -47,6 +47,9 @@ class Botnet:
         except requests.exceptions.ConnectionError:
             self.online = False
 
+    def checkTorNewtork(self):
+        if ".onion" in self.url:
+            self.tor = True
 
     # Obtains web server
     def updateWebServer(self):
@@ -111,6 +114,7 @@ class Botnet:
             self.checkOpenPorts()
             self.checkOS()
             self.getHtmlHash()
+            self.checkTorNewtork()
             return True
         else:
             return False
