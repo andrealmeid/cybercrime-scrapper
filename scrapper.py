@@ -4,6 +4,7 @@ import nmap
 import requests
 import subprocess
 import sys
+import hashlib as hash
 import sqlite3 as sql
 
 headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
@@ -21,6 +22,7 @@ class Botnet:
         self.country = None
         self.webServer = None
         self.os = None
+        self.hash = None
 
     # Obtain server status
     def updateOnlineStatus(self):
@@ -84,6 +86,11 @@ class Botnet:
             self.os = "Windows"
             return
 
+    def getHtmlHash(self):
+        r = requests.get("http://" + self.url, headers = headers).text
+        h = hash.md5(str.encode(r))
+        self.hash = h.hexdigest()
+
     # Returns True if the C&C server is found online and False otherwise.
     def updateInfo(self):
         self.updateOnlineStatus()
@@ -92,14 +99,14 @@ class Botnet:
             self.updateWebServer()
             self.checkOpenPorts()
             self.checkOS()
+            self.getHtmlHash()
             return True
         else:
             return False
 
     def getCsvData(self):
-        return self.date + "; " + self.url + "; " + self.ip + "; " + self.family + "; "
-            + str(self.online) + "; " + str(self.tor) + "; " + str(self.country)
-            + str(self.tor) + "; "  + str(self.webServer) + "; "  + str(self.os)
+        return self.date + "; " + self.url + "; " + self.ip + "; " + self.family + "; " + str(self.online) + "; " + str(self.tor) + "; " + str(self.country) + "; " + str(self.ports) + "; "  + str(self.webServer) + "; "  + str(self.os) + "; " + str(self.hash)
+
 def handleArguments(argv):
     if len(argv) == 1:
         list_start = "0"
@@ -144,7 +151,7 @@ def connectDatabase(database_file):
 
 def insertDatabase(connection, arg_list):
     try:
-        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
+        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
         connection.commit()
 
     except Exception as e:
@@ -185,7 +192,7 @@ def main(argv):
     for bot in botnets:
         if bot.updateInfo():
             print(bot.getCsvData())
-            insertDatabase(connection, (bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os))
+            insertDatabase(connection, (bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os, bot.hash))
 
 if __name__ == "__main__":
     main(sys.argv)
