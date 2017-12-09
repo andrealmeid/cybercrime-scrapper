@@ -6,9 +6,20 @@ import subprocess
 import sys
 import hashlib as hash
 import sqlite3 as sql
+import threading
+from time import sleep
+
 
 headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
 "Accept":"text/html,application/xhtlm+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"}
+
+#For interthread communication. Maybe there's a better way?
+botnetsCount = 0
+botnetsReady = []
+botnetsQueue = []
+
+#Max threads possible.
+maxThreadCount = 100
 
 class Botnet:
     def __init__(self, date, url, ip, family):
@@ -163,21 +174,14 @@ def getDomain(url):
     u = url.find('/')
     return url[:u]
 
+#Threading stuff
+def scanUrlList():
+    global botnetsCount
+    global botnetsReady
+    global botnetsQueue
 
-def main(argv):
-
-    list_start, list_size = handleArguments(argv)
-
-    connection = connectDatabase('botnet.db')
-    cursor = connection.cursor()
-
-    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
-    cybercrime_html = BeautifulSoup(cybercrime_html, 'html.parser')
-    botnets_list = cybercrime_html.find('tbody').find_all('tr')
-
-    botnets = []
-
-    for server in botnets_list:
+    while len(botnetsQueue):
+        server = botnetsQueue.pop(0)
         data = server.find_all('td')
         bot_info = []
         for d in data:
@@ -186,13 +190,51 @@ def main(argv):
         if bot_info[2] == "":
             bot_info[2] = getDomain(bot_info[1])
 
-        botnets.append(Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3]))
+        bot = Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3])
+        try:
+            if bot.updateInfo():
+                botnetsCount += 1
+                print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
+                botnetsReady.append(bot)
+            else:
+                botnetsCount += 1
+                print ("Failed to fetch botnet #" + str(botnetsCount) + " - " + bot.url)
+        except Exception as e:
+            botnetsCount += 1
+            print ("Failed to fetch botnet #" + str(botnetsCount) + " - " + bot.url + " - " + str(e))
+        sleep(1)
 
 
-    for bot in botnets:
-        if bot.updateInfo():
-            print(bot.getCsvData())
-            insertDatabase(connection, (bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os, bot.hash))
+
+def fireThreadScanUrlList():
+    threading.Thread(target=scanUrlList).start()
+
+def main(argv):
+    global botnetsReady
+    global botnetsCount
+    global botnetsQueue
+    global maxThreadCount
+
+    list_start, list_size = handleArguments(argv)
+
+    connection = connectDatabase('botnet.db')
+
+    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
+    cybercrime_html = BeautifulSoup(cybercrime_html, 'html.parser')
+    botnetsQueue = cybercrime_html.find('tbody').find_all('tr')
+
+    #Firing threads
+    for i in range(min(maxThreadCount, int(list_size))):
+        fireThreadScanUrlList()
+
+    #Syncronously adding to database:
+    while (botnetsCount < int(list_size)) or (len(botnetsReady) > 0):
+        if (len(botnetsReady) > 0):
+            bot = botnetsReady.pop(0)
+            insertDatabase(connection, (
+                bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os,
+                bot.hash))
+        sleep(0.5)
 
 if __name__ == "__main__":
     main(sys.argv)
