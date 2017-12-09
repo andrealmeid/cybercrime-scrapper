@@ -1,10 +1,10 @@
 #!/bin/python3
-
 from bs4 import BeautifulSoup
 import nmap
 import requests
 import subprocess
 import sys
+import sqlite3 as sql
 
 headers = {"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
 "Accept":"text/html,application/xhtlm+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"}
@@ -20,7 +20,7 @@ class Botnet:
         self.ports = []
         self.country = None
         self.webServer = None
-        self.so = None
+        self.os = None
 
     # Obtain server status
     def updateOnlineStatus(self):
@@ -47,8 +47,7 @@ class Botnet:
 
     # Obtains country
     def checkCountry(self):
-        u = self.url.find('/')
-        p = subprocess.Popen(["geoiplookup", self.url[:u]], stdout=subprocess.PIPE)
+        p = subprocess.Popen(["geoiplookup", getDomain(self.url), stdout=subprocess.PIPE)
         output, err = p.communicate()
         self.country = output.decode(encoding='UTF-8')[23:25]
 
@@ -73,7 +72,7 @@ class Botnet:
     def getCsvData(self):
         return self.url + "; " + str(self.online) + "; " + str(self.country) + "; " + str(self.webServer) + "; " + str(self.ports)
 
-def main(argv):
+def handleArguments(argv):
     if len(argv) == 1:
         list_start = "0"
         list_size = "30"
@@ -103,10 +102,41 @@ def main(argv):
         print("Usage: ./scrapper [list start] [list size] [-h|--help]")
         exit(0)
 
+    return list_start, list_size
+
+def connectDatabase(database_file):
+    try:
+        connection = sql.connect(database_file)
+        return connection
+
+    except Error as e:
+        print("Error connecting to database.")
+        print(e)
+        sys.exit(1)
+
+def insertDatabase(connection, arg_list):
+    try:
+        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
+        connection.commit()
+
+    except Exception as e:
+        print(e)
+
+
+def getDomain(url):
+    u = url.find('/')
+    return url[:u]
+
+
+def main(argv):
+
+    list_start, list_size = handleArguments(argv)
+
+    connection = connectDatabase('botnet.db')
+    cursor = connection.cursor()
+
     cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
-
     cybercrime_html = BeautifulSoup(cybercrime_html, 'html.parser')
-
     botnets_list = cybercrime_html.find('tbody').find_all('tr')
 
     botnets = []
@@ -119,9 +149,10 @@ def main(argv):
 
         botnets.append(Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3]))
 
+
     for bot in botnets:
         if bot.updateInfo():
-            print (bot.getCsvData())
+            insertDatabase(connection, (bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os))
 
 if __name__ == "__main__":
     main(sys.argv)
