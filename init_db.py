@@ -22,6 +22,7 @@ cursor.execute("""
         country text,
         webServer text,
         os text,
+        hash text,
         UNIQUE(url)
     )
 """)
