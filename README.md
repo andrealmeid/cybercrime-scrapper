@@ -13,3 +13,7 @@ This is a Python 3 software, and it dependencies are:
 - nmap-python, to scan for open ports;
 - BeautifulSoup 4, for scrapping the HTML;
 - subprocess, to run Unix commands.
+
+### Using
+- First, create the SQLite database using `./init_db.py`;
+- Run `./scrapper.py`. Usage: `./scrapper.py [list start] [list size] [-h|--help]`
