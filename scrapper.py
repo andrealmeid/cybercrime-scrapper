@@ -19,7 +19,7 @@ botnetsReady = []
 botnetsQueue = []
 
 #Max threads possible.
-maxThreadCount = 100
+maxThreadCount = 1
 
 class Botnet:
     def __init__(self, date, url, ip, family):
@@ -107,6 +107,17 @@ class Botnet:
 
     # Returns True if the C&C server is found online and False otherwise.
     def updateInfo(self):
+        print(self.url)
+        self.checkTorNewtork()
+        if self.tor:
+            if not ".link" in self.url:
+                u = self.url.find('/')
+                if u == -1:
+                    self.url = self.url + ".link"
+                else:
+                    self.url = getDomain(self.url) + ".link" + self.url[u:]
+            print(self.url)
+
         self.updateOnlineStatus()
         if self.online:
             self.checkCountry()
@@ -114,7 +125,6 @@ class Botnet:
             self.checkOpenPorts()
             self.checkOS()
             self.getHtmlHash()
-            self.checkTorNewtork()
             return True
         else:
             return False
@@ -223,7 +233,7 @@ def main(argv):
 
     connection = connectDatabase('botnet.db')
 
-    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
+    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?search=onion').text
     cybercrime_html = BeautifulSoup(cybercrime_html, 'html.parser')
     botnetsQueue = cybercrime_html.find('tbody').find_all('tr')
 
