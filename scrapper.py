@@ -107,7 +107,6 @@ class Botnet:
 
     # Returns True if the C&C server is found online and False otherwise.
     def updateInfo(self):
-        print(self.url)
         self.checkTorNewtork()
         if self.tor:
             if not ".link" in self.url:
@@ -116,7 +115,6 @@ class Botnet:
                     self.url = self.url + ".link"
                 else:
                     self.url = getDomain(self.url) + ".link" + self.url[u:]
-            print(self.url)
 
         self.updateOnlineStatus()
         if self.online:
@@ -233,7 +231,7 @@ def main(argv):
 
     connection = connectDatabase('botnet.db')
 
-    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?search=onion').text
+    cybercrime_html = requests.get('http://cybercrime-tracker.net/index.php?s=' + list_start + '&m=' + list_size).text
     cybercrime_html = BeautifulSoup(cybercrime_html, 'html.parser')
     botnetsQueue = cybercrime_html.find('tbody').find_all('tr')
 
