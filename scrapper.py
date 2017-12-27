@@ -173,9 +173,13 @@ def connectDatabase(database_file):
         sys.exit(1)
 
 def insertDatabase(connection, arg_list):
+    global botnetsCount
     try:
         connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
         connection.commit()
+
+        print ("Fetched botnet #" + str(botnetsCount) + " - " + arg_list[0])
+        botnetsCount += 1
 
     except Exception as e:
         print("Database insertion error:")
@@ -205,8 +209,7 @@ def scanUrlList():
         bot = Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3])
         try:
             if bot.updateInfo():
-                botnetsCount += 1
-                print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
+                # print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
                 botnetsReady.append(bot)
             else:
                 botnetsCount += 1
