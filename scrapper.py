@@ -33,6 +33,7 @@ class Botnet:
         self.country = None
         self.webServer = None
         self.os = None
+        self.osVersion = None
         self.hash = None
 
     # Obtain server status
@@ -73,6 +74,11 @@ class Botnet:
         host = self.url[:u]
         nm.scan(host, arguments='-Pn')
         self.ports = str(list(nm[nm.all_hosts()[0]]['tcp'].keys()))
+
+    def checkOsVersion(self):
+        nm = nmap.PortScanner()
+        nm.scan(self.ip, arguments='-O')
+        self.ip = nm[self.ip]['osmatch'][0]['name'])
 
     def checkOS(self):
         if not self.webServer:
@@ -122,6 +128,7 @@ class Botnet:
             self.updateWebServer()
             self.checkOpenPorts()
             self.checkOS()
+            self.checkOsVersion()
             self.getHtmlHash()
             return True
         else:
