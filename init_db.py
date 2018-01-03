@@ -24,6 +24,7 @@ cursor.execute("""
         os text,
         osVersion text,
         hash text,
+        dnsRedirect boolean,
         UNIQUE(url)
     )
 """)
