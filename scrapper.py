@@ -121,7 +121,7 @@ class Botnet:
                 self.dnsRedirect =  False
         else:
             self.dnsRedirect = True
-            
+
 
     def getHtmlHash(self):
         r = requests.get("http://" + self.url, headers = headers).text
@@ -217,6 +217,10 @@ def insertDatabase(connection, arg_list):
     except Exception as e:
         print(e)
 
+
+def getIP(url):
+    req = requests.get(url, stream=True)
+    return req.raw._fp.fp.raw._sock.getpeername()[0]
 
 def getDomain(url):
     u = url.find('/')
