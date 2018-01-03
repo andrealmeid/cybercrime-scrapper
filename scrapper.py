@@ -19,7 +19,7 @@ botnetsReady = []
 botnetsQueue = []
 
 #Max threads possible.
-maxThreadCount = 1
+maxThreadCount = 10
 
 class Botnet:
     def __init__(self, date, url, ip, family):
@@ -34,6 +34,7 @@ class Botnet:
         self.webServer = None
         self.os = None
         self.hash = None
+        self.dnsRedirect = False
 
     # Obtain server status
     def updateOnlineStatus(self):
@@ -100,6 +101,25 @@ class Botnet:
             self.os = "Windows"
             return
 
+    # checks if the ip and url redirects to the same domain
+    # if it doesnt, check the hash of both pages to see if its the same HTML
+    def checkDnsRedirect(self):
+        req1 = requests.get("http://" + self.url, stream=True)
+        ip = req1.raw._fp.fp.raw._sock.getpeername()[0]
+        a = req1.url.split("//")[-1].split("/")[0]
+
+        req2 = requests.get("http://" + ip)
+        b = req2.url.split("//")[-1].split("/")[0]
+
+        if a != b:
+            if hash.md5(str.encode(req1.text)) == hash.md5(str.encode(req2.text)):
+                self.dnsRedirect = True
+            else:
+                self.dnsRedirect =  False
+        else:
+            self.dnsRedirect = True
+            
+
     def getHtmlHash(self):
         r = requests.get("http://" + self.url, headers = headers).text
         h = hash.md5(str.encode(r))
@@ -123,6 +143,8 @@ class Botnet:
             self.checkOpenPorts()
             self.checkOS()
             self.getHtmlHash()
+            if self.ip != getDomain(self.url):
+                self.checkDnsRedirect()
             return True
         else:
             return False
@@ -175,7 +197,7 @@ def connectDatabase(database_file):
 def insertDatabase(connection, arg_list):
     global botnetsCount
     try:
-        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
+        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os, hash, dnsRedirect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
         connection.commit()
 
         print ("Fetched botnet #" + str(botnetsCount) + " - " + arg_list[0])
@@ -209,7 +231,7 @@ def scanUrlList():
         bot = Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3])
         try:
             if bot.updateInfo():
-                # print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
+                #print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
                 botnetsReady.append(bot)
             else:
                 botnetsCount += 1
@@ -248,7 +270,7 @@ def main(argv):
             bot = botnetsReady.pop(0)
             insertDatabase(connection, (
                 bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os,
-                bot.hash))
+                bot.hash, bot.dnsRedirect))
         sleep(0.5)
 
 if __name__ == "__main__":
