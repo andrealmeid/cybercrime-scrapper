@@ -16,4 +16,4 @@ This is a Python 3 software, and it dependencies are:
 
 ### Using
 - First, create the SQLite database using `./init_db.py`;
-- Run `./scrapper.py`. Usage: `./scrapper.py [list start] [list size] [-h|--help]`
+- Run `sudo ./scrapper.py`. Usage: `./scrapper.py [list start] [list size] [-h|--help]`

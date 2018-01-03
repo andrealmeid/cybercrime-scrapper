@@ -78,7 +78,7 @@ class Botnet:
     def checkOsVersion(self):
         nm = nmap.PortScanner()
         nm.scan(self.ip, arguments='-O')
-        self.ip = nm[self.ip]['osmatch'][0]['name'])
+        self.osVersion = nm[self.ip]['osmatch'][0]['name']
 
     def checkOS(self):
         if not self.webServer:
@@ -182,7 +182,7 @@ def connectDatabase(database_file):
 def insertDatabase(connection, arg_list):
     global botnetsCount
     try:
-        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
+        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, osVersion, os, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
         connection.commit()
 
         print ("Fetched botnet #" + str(botnetsCount) + " - " + arg_list[0])
@@ -216,7 +216,6 @@ def scanUrlList():
         bot = Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3])
         try:
             if bot.updateInfo():
-                # print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
                 botnetsReady.append(bot)
             else:
                 botnetsCount += 1
@@ -255,7 +254,7 @@ def main(argv):
             bot = botnetsReady.pop(0)
             insertDatabase(connection, (
                 bot.url, bot.date, bot.ip, bot.family, bot.online, bot.tor, bot.ports, bot.country, bot.webServer, bot.os,
-                bot.hash))
+                bot.osVersion, bot.hash))
         sleep(0.5)
 
 if __name__ == "__main__":
