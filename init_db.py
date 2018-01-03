@@ -23,6 +23,7 @@ cursor.execute("""
         webServer text,
         os text,
         hash text,
+        dnsRedirect boolean,
         UNIQUE(url)
     )
 """)
