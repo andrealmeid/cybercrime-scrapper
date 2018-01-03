@@ -21,6 +21,9 @@ botnetsQueue = []
 #Max threads possible.
 maxThreadCount = 10
 
+# Check if the scrapper can continue scaning the botlist or not
+stopScan = False
+
 class Botnet:
     def __init__(self, date, url, ip, family):
         self.date = date
@@ -196,6 +199,9 @@ def connectDatabase(database_file):
 
 def insertDatabase(connection, arg_list):
     global botnetsCount
+    global stopScan
+    global botnetsReady
+
     try:
         connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, os, hash, dnsRedirect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
         connection.commit()
@@ -203,8 +209,12 @@ def insertDatabase(connection, arg_list):
         print ("Fetched botnet #" + str(botnetsCount) + " - " + arg_list[0])
         botnetsCount += 1
 
+    except sql.IntegrityError as e:
+        if str(e) == "UNIQUE constraint failed: Botnet.url":
+            print("Botnet " + arg_list[0] + " already on database!")
+            stopScan = True
+
     except Exception as e:
-        print("Database insertion error:")
         print(e)
 
 
@@ -217,8 +227,11 @@ def scanUrlList():
     global botnetsCount
     global botnetsReady
     global botnetsQueue
+    global stopScan
 
     while len(botnetsQueue):
+        if stopScan:
+            return
         server = botnetsQueue.pop(0)
         data = server.find_all('td')
         bot_info = []
@@ -231,7 +244,6 @@ def scanUrlList():
         bot = Botnet(bot_info[0], bot_info[1], bot_info[2], bot_info[3])
         try:
             if bot.updateInfo():
-                #print ("Fetched botnet #" + str(botnetsCount) + " - " + bot.url)
                 botnetsReady.append(bot)
             else:
                 botnetsCount += 1
@@ -251,6 +263,7 @@ def main(argv):
     global botnetsCount
     global botnetsQueue
     global maxThreadCount
+    global stopScan
 
     list_start, list_size = handleArguments(argv)
 
@@ -265,7 +278,7 @@ def main(argv):
         fireThreadScanUrlList()
 
     #Syncronously adding to database:
-    while (botnetsCount < int(list_size)) or (len(botnetsReady) > 0):
+    while (botnetsCount < int(list_size) and not stopScan) or (len(botnetsReady) > 0):
         if (len(botnetsReady) > 0):
             bot = botnetsReady.pop(0)
             insertDatabase(connection, (
