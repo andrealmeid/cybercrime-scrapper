@@ -19,7 +19,7 @@ botnetsReady = []
 botnetsQueue = []
 
 #Max threads possible.
-maxThreadCount = 10
+maxThreadCount = 100
 
 # Check if the scrapper can continue scaning the botlist or not
 stopScan = False
@@ -210,7 +210,7 @@ def insertDatabase(connection, arg_list):
     global botnetsReady
 
     try:
-        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, osVersion, os, hash, dnsRedirect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
+        connection.cursor().execute("INSERT INTO Botnet (url, include_date, ip, family, online, tor, ports, country, webServer, osVersion, os, hash, dnsRedirect) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" , arg_list)
         connection.commit()
 
         print ("Fetched botnet #" + str(botnetsCount) + " - " + arg_list[0])
@@ -219,7 +219,7 @@ def insertDatabase(connection, arg_list):
     except sql.IntegrityError as e:
         if str(e) == "UNIQUE constraint failed: Botnet.url":
             print("Botnet " + arg_list[0] + " already on database!")
-            stopScan = True
+            #stopScan = True
 
     except Exception as e:
         print(e)

@@ -17,7 +17,9 @@ ports = []
 country = []
 webServer = []
 os = []
+osNmap = []
 hash = []
+dns = []
 
 with con:
     cur = con.cursor()
@@ -38,7 +40,9 @@ for row in rows:
     country.append(row[7])
     webServer.append(row[8])
     os.append(row[9])
-    hash.append(row[10])
+    osNmap.append(row[10])
+    hash.append(row[11])
+    dns.append(row[12])
 
 
 os_statistic = {}
@@ -134,6 +138,23 @@ for elem in hash:
     else:
         hash_statistic[elem] += 1
 
+
+osNmap_statistic = {}
+
+for elem in osNmap:
+    if elem not in osNmap_statistic.keys():
+        osNmap_statistic[elem] = 1
+    else:
+        osNmap_statistic[elem] += 1
+
+dns_statistic = {}
+
+for elem in dns:
+    if elem not in dns_statistic.keys():
+        dns_statistic[elem] = 1
+    else:
+        dns_statistic[elem] += 1
+
 def make_autopct(values):
     def my_autopct(pct):
         total = sum(values)
@@ -174,13 +195,17 @@ top_ports.append(sorted(ports_statistic, key = ports_statistic.get, reverse=True
 for i in range(0, 15):
     print(top_ports[1][i], ": ", top_ports[0][i])
 
-#piePlot(family_statistic, 15)
+piePlot(family_statistic, 30)
 #piePlot(ports_statistic, 200)
-#piePlot(os_statistic)
-#piePlot(webServer_statistic,5)
-#piePlot(apache_statistic, 3)
-#piePlot(nginx_statistic, 3)
-#piePlot(country_statistic, 10)
+piePlot(os_statistic, 22)
+#piePlot(webServer_statistic, 30)
+#piePlot(apache_statistic, 5)
+#piePlot(nginx_statistic, 10)
+#piePlot(country_statistic, 13)
+#piePlot(hash_statistic, 38)
+#piePlot(osNmap_statistic)
+#piePlot(dns_statistic)
+
 
 #print(ports_statistic)
 #print(apache_statistic)
